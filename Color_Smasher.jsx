@@ -607,25 +607,48 @@ function container()
 	//lockUnlockLayers Function Description
 	//If the file is a template file, comb through layer structure and ensure
 	//all layers are correctly locked or unlocked as required
-	function lockUnlockLayers()
+	// function lockUnlockLayers()
+	// {
+	// 	log.h("Beginning execution of lockUnlockLayers function.");
+	// 	for(var L=0;L<layers.length;L++)
+	// 	{
+	// 		if(layers[L].name.indexOf("FD")>-1 && layers[L].name.indexOf("non-temp")==-1)
+	// 		{
+	// 			var thisLayer = layers[L];
+	// 			thisLayer.layers["Information"].locked = true;
+	// 			thisLayer.layers["Mockup"].locked = false;
+	// 			thisLayer.layers["Artwork Layer"].locked = false;
+	// 		}
+	// 		else if(layers[L].name == "Guides" || layers[L].name == "BKGRD, do not unlock")
+	// 		{
+	// 			layers[L].locked = true;
+	// 		}
+	// 	}
+	// 	log.l("End of lockUnlockLayers function.");
+	// }
+
+	function unlockLayers()
 	{
-		log.h("Beginning execution of lockUnlockLayers function.");
-		for(var L=0;L<layers.length;L++)
+		log.h("Beginning execution of unlockLayers function.");
+		var layLen = layers.length;
+		var thislay;
+		for(var l=0;l<layLen;l++)
 		{
-			if(layers[L].name.indexOf("FD")>-1 && layers[L].name.indexOf("non-temp")==-1)
+			thisLay = layers[l];
+			try
 			{
-				var thisLayer = layers[L];
-				thisLayer.layers["Information"].locked = true;
-				thisLayer.layers["Mockup"].locked = false;
-				thisLayer.layers["Artwork Layer"].locked = false;
+				thisLay.layers["Artwork Layer"].locked = false;
+				thisLay.layers["Mockup"].locked = false;
+				thisLay.layers["Information"].locked = true;
+				thisLay.layers["Prepress"].visible = false;
 			}
-			else if(layers[L].name == "Guides" || layers[L].name == "BKGRD, do not unlock")
+			catch(e)
 			{
-				layers[L].locked = true;
+				log.l("Looks like this isn't a template layer. moving on.");
 			}
 		}
-		log.l("End of lockUnlockLayers function.");
 	}
+
 
 
 	////////End//////////
@@ -718,7 +741,8 @@ function container()
 
 		if(template)
 		{
-			lockUnlockLayers();
+			// lockUnlockLayers();
+			unlockLayers();
 		}
 
 		var inkLayer = existInkLayer();
