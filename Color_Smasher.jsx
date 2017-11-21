@@ -183,7 +183,7 @@ function container()
 		for(var t=0;t<layers.length;t++)
 		{
 			// if(layers[t].name.indexOf("FD")>-1 && layers[t].name.indexOf("non-temp")==-1)
-			if(layers[t].name.indexOf("non-temp")==-1 && (pat1.test(layers[t].name) || pat3.test(layers[t].name)) && pat2.test(layers[t].layers[0]))
+			if(layers[t].name.indexOf("non-temp")==-1 && layers[t].name.indexOf("ontainer")== -1 && (pat1.test(layers[t].name) || pat3.test(layers[t].name)) && pat2.test(layers[t].layers[0]))
 			{
 				template = true;
 				break;
