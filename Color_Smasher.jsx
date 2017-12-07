@@ -106,6 +106,8 @@ Version 4.001
 function container()
 {
 
+	var valid = true;
+	eval("#include \"/Volumes/Customization/Library/Scripts/Script Resources/Data/Utilities_Container.jsxbin\"");
 	/*****************************************************************************/
 
 	///////Begin/////////
@@ -681,10 +683,7 @@ function container()
 		}
 	}
 
-	//pull in the utilities container for logging
-	#include "/Volumes/Customization/Library/Scripts/Script Resources/Data/Utilities_Container.js";
 
-	var user = $.getenv("USER");
 	if(user == "will.dowling")
 	{
 		logDest.push(new File("~/Desktop/automation/javascript/logging/color_smasher_dev_log.txt"));
@@ -704,6 +703,10 @@ function container()
 	///Function Calls///
 	////////////////////
 
+	if(!valid)
+	{
+		return false;
+	}
 
 	//Global Variables
 	var docRef = app.activeDocument;
