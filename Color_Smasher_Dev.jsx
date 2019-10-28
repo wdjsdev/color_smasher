@@ -107,7 +107,25 @@ function container()
 {
 
 	var valid = true;
+	var scriptName = "color_smasher";
+
+	//Production Utilities
 	eval("#include \"/Volumes/Customization/Library/Scripts/Script Resources/Data/Utilities_Container.jsxbin\"");
+	eval("#include \"/Volumes/Customization/Library/Scripts/Script Resources/Data/Batch_Framework.jsxbin\"");
+	
+	// //Dev Utilities
+	// eval("#include \"/Volumes/Macintosh HD/Users/will.dowling/Desktop/automation/utilities/Utilities_Container.js\"");
+	// eval("#include \"/Volumes/Macintosh HD/Users/will.dowling/Desktop/automation/utilities/Batch_Framework.js\"");
+
+	if(!valid)
+	{
+		return;
+	}
+
+	logDest.push(getLogDest());
+
+
+	
 	/*****************************************************************************/
 
 	///////Begin/////////
@@ -655,16 +673,6 @@ function container()
 			gray: false,
 			gray2: false
 		}
-	}
-
-
-	if (user == "will.dowling")
-	{
-		logDest.push(new File("~/Desktop/automation/logs/color_smasher_dev_log.txt"));
-	}
-	else
-	{
-		logDest.push(new File("/Volumes/Customization/Library/Scripts/Script Resources/Data/.script_logs/color_smasher_log.txt"))
 	}
 
 	////////End/////////
