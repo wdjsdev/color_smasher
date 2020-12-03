@@ -8,86 +8,6 @@ Build Date: 2 September, 2016
 Description: Rebuild of color smasher script for increased efficiency, error handling, and comments
 Build number: 3
 
-Version History:
-
-Version 3.001
-	2 September 2016
-	Initial build.
-	
-Version 3.002
-	6 September 2016
-	Fixed infinite loop in generateInklist function
-	Added an app.redraw() at the beginning of generateInklist function because docRef.inkList needs 
-		to be refreshed before displaying the proper values.
-
-Version 3.003
-	08 September 2016
-	Continued building makeColorChips function.
-	Finished and tested makeColorChips function.
-	Added contingency to place swatches on 2 rows if there are more than 8
-	Added check for navy and navy2 and/or gray and gray2
-	Currently working on multiple artboards. Could use some more testing, but it seems solid at the moment.
-	Added a fix for when incorrect layers are locked and vice versa.
-
-Version 3.004
-	15 September 2016
-	changed lockall layers function
-	
-Version 3.005
-	21 September 2016
-	reduced stroke weight of white color chip
-	reversed the loop that deletes existing swatches
-		it was running forward while deleting swatches, so some swatches were left behind as their index changed.
-
-Version 3.006
-	05 October 2016
-	****CANCEL****
-	reversed try/catch statement in getLabelColor function.
-		Info B swatch was not being created when necessary and labels were showing up as a process color.
-		Instead of trying to set the labelColor to an existing swatch, i'll try to create a new swatch and give it the name "Info B".
-		If that fails due to the pre-existence of Info B, then set labelColor to the existing Info B swatch.
-	****CANCEL****
-	the above description was not the problem. The swatch was being properly created, but it was being incorrectly referenced when applied.
-		I was attempting to apply the swatch incorrectly. i was trying to use the variable, rather than referencing the swatches panel and getting the swatch by name.
-
-Version 3.007
-	05 October 2016
-	Adjusted the makeColorChips function to properly apply the label color by referencing swatches[labelColor.name].color
-	Tested and working.
-
-Version 3.008
-	13 December, 2016
-	Included additional check to make sure script doesn't trip up on non-template layers that contain "FD".
-
-Version 3.009
-	31 January, 2017
-	Changing placement of color chips to a relative percentage of artboard height rather than an absolute height
-		There have been issues with mockup artboards being different sizes between garments causing improper placement of color chips.
-	Also set colorchips to size dynamically to the size of the mockup. color chips will be 1/7th the width of the mockup.
-	Resized textRefBox to fit inside of the color chip. This is especially necessary on smaller mockups as the text becomes too large for the chip.
-
-Version 3.010
-	31 January, 2017
-	Fixed getLabelColor function which was needlessly creating empty spot color swatches.
-	Made additional adjustments to the text callouts in the color chips. Scaled their width conditionally to ensure they fit inside of the color chip.
-	Added logic to chip row placement to accomodate more than 14 swatches. 
-
-Version 3.011
-	01 January, 2017
-	Adjust the number of characters necessary before shrinking characterWidth.
-		Certain colors are still having text cut off.
-
-Version 3.012
-	03 April, 2017
-	Made a fix that caused an error when the script attempted to add a color that doesn't exist in the swatches panel.
-		these colors are simply skipped now.
-
-Version 4.001
-	25 April, 2017
-	Adding detailed logging.
-*/
-
-
 /*Step By Step
 	
 	for each artboard
@@ -102,7 +22,7 @@ Version 4.001
 
 
 */
-
+#target Illustrator
 function container()
 {
 
@@ -676,6 +596,31 @@ function container()
 		}
 	}
 
+	function preflightSwatches()
+	{
+		var result = true;
+
+		var dupSwatches = [];
+
+		var dupSwatchPat = /[a-z\s]*b[\d]$/i
+		var bSwatchPat = /^b[\d]{1,}$/i;
+
+		for(var x=0;x<swatches.length;x++)
+		{
+			if(dupSwatchPat.test(swatches[x].name) && !bSwatchPat.test(swatches[x].name))
+			{
+				dupSwatches.push(swatches[x].name);
+			}
+		}
+
+		if(dupSwatches.length)
+		{
+			result = false;
+			alert("Document contains the following colors that need to be merged:\n" + dupSwatches.join("\n"));
+		}
+		return result;
+	}
+
 
 
 	////////End//////////
@@ -730,6 +675,15 @@ function container()
 	var artboards = docRef.artboards;
 	var errorList = [];
 	var scriptNotes = [];
+
+
+
+	valid = preflightSwatches();
+
+	if(!valid)
+	{
+		return false;
+	}
 
 
 	var template = isTemplate(docRef);
