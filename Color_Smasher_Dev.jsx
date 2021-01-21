@@ -101,39 +101,40 @@ function container()
 	function getLabelColor()
 	{
 		log.h("Beginning execution of getLabelColor function.");
-		var valid = false;
-		var result;
-		try
-		{
-			result = swatches["Info B"];
-			valid = true;
-			log.l("Label color swatch successfully set to Info B.");
-		}
-		catch (e)
-		{
-			log.l("Info B did not exist. Creating a new swatch.");
-			var newSwatch = docRef.spots.add();
-			newSwatch.name = "Info B";
+		// var valid = false;
+		var result = makeNewSpotColor("Info B");
 
-			var thisColor = new CMYKColor();
-			thisColor.cyan = 100;
-			thisColor.magenta = 100;
-			thisColor.yellow = 100;
-			thisColor.black = 100;
+		// try
+		// {
+		// 	result = swatches["Info B"];
+		// 	valid = true;
+		// 	log.l("Label color swatch successfully set to Info B.");
+		// }
+		// catch (e)
+		// {
+		// 	log.l("Info B did not exist. Creating a new swatch.");
+		// 	var newSwatch = docRef.spots.add();
+		// 	newSwatch.name = "Info B";
 
-			newSwatch.color = thisColor;
-			newSwatch.colorType = ColorModel.SPOT;
-			newSwatch.tint = 100;
-			valid = true;
-			result = newSwatch
-			log.l("Successfully created Info B swatch.");
-		}
+		// 	var thisColor = new CMYKColor();
+		// 	thisColor.cyan = 100;
+		// 	thisColor.magenta = 100;
+		// 	thisColor.yellow = 100;
+		// 	thisColor.black = 100;
 
-		if (!valid)
-		{
-			log.e("Failed while trying to create an Info B swatch.");
-			errorList.push("Failed while setting 'Info B' color.\nTry manually adding the 'Info B' swatch to the document swatches panel and try again.\nOtherwise, please restart Illustrator.");
-		}
+		// 	newSwatch.color = thisColor;
+		// 	newSwatch.colorType = ColorModel.SPOT;
+		// 	newSwatch.tint = 100;
+		// 	valid = true;
+		// 	result = newSwatch
+		// 	log.l("Successfully created Info B swatch.");
+		// }
+
+		// if (!valid)
+		// {
+		// 	log.e("Failed while trying to create an Info B swatch.");
+		// 	errorList.push("Failed while setting 'Info B' color.\nTry manually adding the 'Info B' swatch to the document swatches panel and try again.\nOtherwise, please restart Illustrator.");
+		// }
 
 		log.l("End of getLabelColor function. Returning " + result + ".\n");
 
