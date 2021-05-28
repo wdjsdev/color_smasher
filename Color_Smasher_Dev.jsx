@@ -335,6 +335,14 @@ function container()
 				{
 					library.navyGray.gray2 = true;
 				}
+				else if(inkList[i].name == "Charcoal B")
+				{
+					library.navyGray.charcoal = true;
+				}
+				else if(inkList[i].name == "Charcoal 2 B")
+				{
+					library.navyGray.charcoal2 = true;
+				}
 			}
 		}
 
@@ -345,12 +353,21 @@ function container()
 			trueColors = null;
 
 		}
-		else if (library.navyGray.gray && library.navyGray.gray2)
+
+		if (library.navyGray.gray && library.navyGray.gray2)
 		{
 			log.e("File contains Gray B and Gray 2 B.");
 			errorList.push("You have 'Gray B' AND 'Gray 2 B' in your mockup. Please undo, merge them, and try again.");
 			trueColors = null;
 		}
+
+		if (library.navyGray.charcoal && library.navyGray.charcoal2)
+		{
+			log.e("File contains Charcoal B and Charcoal 2 B.");
+			errorList.push("You have 'Charcoal B' AND 'Charcoal 2 B' in your mockup. Please undo, merge them, and try again.");
+			trueColors = null;
+		}
+
 		log.l("End of generateInkList function. Returning " + trueColors);
 		return trueColors;
 	}
