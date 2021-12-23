@@ -639,6 +639,13 @@ function container()
 		return result;
 	}
 
+	function displayCheckBoombahLogoDialog()
+	{
+		var w = new Window("dialog","Make sure the Boombah logo is not hidden.");
+			var img = UI.iconButton(w,resourcePath + "Images/look_closely.jpg",function(){w.close()});
+		w.show();
+	}
+
 
 
 	////////End//////////
@@ -770,6 +777,8 @@ function container()
 
 	//turn on printing for all layers
 	setPrintable(true);
+
+	displayCheckBoombahLogoDialog()
 
 	docRef.selection = null;
 
