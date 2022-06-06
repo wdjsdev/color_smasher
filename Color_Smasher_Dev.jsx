@@ -641,8 +641,10 @@ function container()
 
 	function displayCheckBoombahLogoDialog()
 	{
+		var imgIndex = getRandom(1,7);
+		$.writeln("imgIndex = " + imgIndex);
 		var w = new Window("dialog","Make sure the Boombah logo is not hidden.");
-			var img = UI.iconButton(w,resourcePath + "Images/look_closely.jpg",function(){w.close()});
+			var img = UI.iconButton(w,resourcePath + "Images/look_closely/look_closely_" + imgIndex + ".jpg",function(){w.close()});
 		w.show();
 	}
 
