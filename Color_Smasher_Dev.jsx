@@ -141,6 +141,24 @@ function container()
 		return result;
 	}
 
+	function turnOffOverprint() {
+		app.userInteractionLevel = UserInteractionLevel.DONTDISPLAYALERTS;
+		createAction("turn_off_overprint", TURN_OFF_OVERPRINT_ACTION_STRING);
+		app.executeMenuCommand("selectall");
+		var items = afc(docRef, "selection");
+		docRef.selection = null;
+		items.forEach(function (item) {
+			item.selected = true;
+			app.doScript("turn_off_overprint", "turn_off_overprint");
+			item.selected = false;
+		})
+		// app.doScript("turn_off_overprint", "turn_off_overprint");
+		removeAction("turn_off_overprint");
+		app.userInteractionLevel = UserInteractionLevel.DISPLAYALERTS;
+		return;
+
+	}
+
 
 
 	//removeOldChips Function Description:
@@ -703,7 +721,7 @@ function container()
 	var errorList = [];
 	var scriptNotes = [];
 
-
+	app.userInteractionLevel = UserInteractionLevel.DISPLAYALERTS;
 
 	valid = preflightSwatches();
 
@@ -712,6 +730,7 @@ function container()
 		return false;
 	}
 
+	turnOffOverprint();
 
 	var template = isTemplate(docRef);
 
