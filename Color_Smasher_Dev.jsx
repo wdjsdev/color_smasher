@@ -302,9 +302,12 @@ function container ()
 
 		createAction( "cleanup_swatches", CLEANUP_SWATCHES_ACTION_STRING );
 		//update the swatches to make sure we catch any deleted global spot colors
-		app.doScript( "delete_unused", "cleanup_swatches" );
-		app.doScript( "add_used", "cleanup_swatches" );
+		// app.doScript( "delete_unused", "cleanup_swatches" );
+		docRef.selection = null;
+		docRef.layers[ "Ink Layer" ].hasSelectedArtwork = true;
+		app.doScript( "add_selected", "cleanup_swatches" );
 		removeAction( "cleanup_swatches" );
+		docRef.selection = null;
 
 
 
