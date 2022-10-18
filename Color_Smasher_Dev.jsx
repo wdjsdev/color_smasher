@@ -300,13 +300,11 @@ function container ()
 
 	// 	docRef.selection = null;
 
-	// 	afc( docRef, "symbolItems" ).forEach( function ( si )
-	// 	{
-	// 		if ( si.layer === inkLayer )
-	// 		{
-	// 			si.remove();
-	// 		}
-	// 	} );
+	createAction( "cleanup_swatches", CLEANUP_SWATCHES_ACTION_STRING );
+	//update the swatches to make sure we catch any deleted global spot colors
+	app.doScript( "delete_unused", "cleanup_swatches" );
+	app.doScript( "add_used", "cleanup_swatches" );
+	removeAction( "cleanup_swatches" );
 
 	// 	var inkList = [];
 
