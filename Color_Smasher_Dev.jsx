@@ -31,52 +31,76 @@ function container ()
 
 	function getUtilities ()
 	{
-		var result = [];
-		var utilPath = "/Volumes/Customization/Library/Scripts/Script_Resources/Data/";
-		var ext = ".jsxbin"
-
-		//check for dev utilities preference file
+		//check for dev mode
 		var devUtilitiesPreferenceFile = File( "~/Documents/script_preferences/dev_utilities.txt" );
-
-		if ( devUtilitiesPreferenceFile.exists )
+		var devUtilPath = "~/Desktop/automation/utilities/";
+		var devUtils = [ devUtilPath + "Utilities_Container.js", devUtilPath + "Batch_Framework.js" ];
+		function readDevPref ( dp ) { dp.open( "r" ); var contents = dp.read() || ""; dp.close(); return contents; }
+		if ( readDevPref( devUtilitiesPreferenceFile ).match( /true/i ) )
 		{
-			devUtilitiesPreferenceFile.open( "r" );
-			var prefContents = devUtilitiesPreferenceFile.read();
-			devUtilitiesPreferenceFile.close();
-			if ( prefContents.match( /true/i ) )
+			$.writeln( "///////\n////////\nUsing dev utilities\n///////\n////////" );
+			return devUtils;
+		}
+
+		var utilNames = [ "Utilities_Container" ];
+
+		//not dev mode, use network utilities
+		var OS = $.os.match( "Windows" ) ? "pc" : "mac";
+		var ad4 = ( OS == "pc" ? "//AD4/" : "/Volumes/" ) + "Customization/";
+		var drsv = ( OS == "pc" ? "O:/" : "/Volumes/CustomizationDR/" );
+		var ad4UtilsPath = ad4 + "Library/Scripts/Script_Resources/Data/";
+		var drsvUtilsPath = drsv + "Library/Scripts/Script_Resources/Data/";
+
+		var result = [];
+		for ( var u = 0, util; u < utilNames.length; u++ )
+		{
+			util = utilNames[ u ];
+			var ad4UtilPath = ad4UtilsPath + util + ".jsxbin";
+			var ad4UtilFile = File( ad4UtilsPath );
+			var drsvUtilPath = drsvUtilsPath + util + ".jsxbin"
+			var drsvUtilFile = File( drsvUtilPath );
+			if ( drsvUtilFile.exists )
 			{
-				utilPath = "~/Desktop/automation/utilities/";
-				ext = ".js";
+				result.push( drsvUtilPath );
+			}
+			else if ( ad4UtilFile.exists )
+			{
+				result.push( ad4UtilPath );
+			}
+			else
+			{
+				alert( "Could not find " + util + ".jsxbin\nPlease ensure you're connected to the appropriate Customization drive." );
+				alert( "Using util path: " + drsvUtilsPath )
+				valid = false;
 			}
 		}
 
-		if ( $.os.match( "Windows" ) )
-		{
-			utilPath = utilPath.replace( "/Volumes/", "//AD4/" );
-		}
-
-		result.push( utilPath + "Utilities_Container" + ext );
-		result.push( utilPath + "Batch_Framework" + ext );
-
-		if ( !result.length )
-		{
-			valid = false;
-			alert( "Failed to find the utilities." );
-		}
 		return result;
 
 	}
 
+
+
 	var utilities = getUtilities();
-	for ( var u = 0, len = utilities.length; u < len; u++ )
+
+
+
+
+	for ( var u = 0, len = utilities.length; u < len && valid; u++ )
 	{
 		eval( "#include \"" + utilities[ u ] + "\"" );
 	}
 
+
 	if ( !valid ) return;
 
-	DEV_LOGGING = true;
 	logDest.push( getLogDest() );
+
+	var smashTimer = new Stopwatch();
+	smashTimer.logStart();
+
+	DEV_LOGGING = true;
+
 
 
 
@@ -101,43 +125,9 @@ function container ()
 	//If This color does not yet exist in the document swatches, create a new swatch
 	function getLabelColor ()
 	{
-		log.h( "Beginning execution of getLabelColor function." );
-		// var valid = false;
+		log.l( "Getting labelColor." );
 		var result = makeNewSpotColor( "Info B" );
-
-		// try
-		// {
-		// 	result = swatches["Info B"];
-		// 	valid = true;
-		// 	log.l("Label color swatch successfully set to Info B.");
-		// }
-		// catch (e)
-		// {
-		// 	log.l("Info B did not exist. Creating a new swatch.");
-		// 	var newSwatch = docRef.spots.add();
-		// 	newSwatch.name = "Info B";
-
-		// 	var thisColor = new CMYKColor();
-		// 	thisColor.cyan = 100;
-		// 	thisColor.magenta = 100;
-		// 	thisColor.yellow = 100;
-		// 	thisColor.black = 100;
-
-		// 	newSwatch.color = thisColor;
-		// 	newSwatch.colorType = ColorModel.SPOT;
-		// 	newSwatch.tint = 100;
-		// 	valid = true;
-		// 	result = newSwatch
-		// 	log.l("Successfully created Info B swatch.");
-		// }
-
-		// if (!valid)
-		// {
-		// 	log.e("Failed while trying to create an Info B swatch.");
-		// 	errorList.push("Failed while setting 'Info B' color.\nTry manually adding the 'Info B' swatch to the document swatches panel and try again.\nOtherwise, please restart Illustrator.");
-		// }
-
-		log.l( "End of getLabelColor function. Returning " + result + ".\n" );
+		log.l( "labelColor = " + result );
 
 		return result;
 	}
@@ -147,498 +137,173 @@ function container ()
 	//removeOldChips Function Description:
 	//search for any existing color chips and remove
 	//This function is executed at the beginning to ensure a clean slate
-	function removeOldChips ()
+	function removeOldChips ( layer )
 	{
+		var timerLabel = "removeOldChips-" + ( layer ? layer.name : "document" );
+		smashTimer.beginTask( timerLabel );
 		log.h( "Beginning execution of removeOldChips function." );
+		var bkgrdLayer = findSpecificLayer( layers, "bkgrd", "any" );
 
-		var artboardSwatchesLayer = findSpecificLayer( layers, "Artboard Swatches", "any" );
+		var artboardSwatchesLayer = findSpecificLayer( layers, "swatches", "any" );
 		if ( artboardSwatchesLayer )
 		{
 			artboardSwatchesLayer.remove();
 		}
-		else
+		else if ( bkgrdLayer )
 		{
-			var bkgrdLayer = findSpecificLayer( layers, "bkgrd", "any" );
-			artboardSwatchesLayer = findSpecificLayer( layers, "Artboard Swatches", "any" );
-			if ( artboardSwatchesLayer )
+
+			bkgrdLayer.locked = false;
+			bkgrdLayer.visible = true;
+			afc( bkgrdLayer, "groupItems" ).forEach( function ( item ) 
 			{
-				artboardSwatchesLayer.remove();
-			}
+				if ( item.name.match( /swatches/i ) )
+				{
+					item.remove();
+				}
+			} );
+			bkgrdLayer.visible = false;
+		}
+		if ( layer )
+		{
+			layer.visible = true;
+			layer.parent.visible = true;
+			afc( layer, "groupItems" ).filter( function ( item )
+			{
+				return item.name.match( /swatches/i )
+			} ).forEach( function ( item ) 
+			{
+				item.remove();
+			} );
+			layer.parent.visible = false;
+
 		}
 
+		smashTimer.endTask( timerLabel )
 
-
-		// try
-		// {
-		// 	var theLayer = layers[ "BKGRD, do not unlock" ];
-		// 	log.l( "Set theLayer to BKGRD, do not unlock" );
-		// }
-		// catch ( e )
-		// {
-		// 	//set theLayer to the bottom-most layer
-		// 	var theLayer = layers[ layers.length - 1 ];
-		// 	log.l( "No BKGRD layer present. Using the bottom layer which is " + theLayer.name );
-		// }
-
-		// theLayer.locked = false;
-		// theLayer.visible = true;
-		// for ( var L = theLayer.groupItems.length - 1; L > -1; L-- )
-		// {
-		// 	var curGroup = theLayer.groupItems[ L ];
-		// 	if ( curGroup.name.indexOf( "Swatches" ) > -1 )
-		// 	{
-		// 		curGroup.remove();
-		// 	}
-		// }
-		// theLayer.locked = true;
-		// log.l( "End of removeOldChips function. Successfully removed all old color chips.\n" );
 	}
 
 
+	function isOverset ( frame )
+	{
+		if ( frame.kind == TextType.POINTTEXT )
+		{
+			return false;
+		}
+		if ( frame.lines.length == 1 && frame.paragraphs.length == 1 )
+		{
+			// single line
+			if ( frame.lines[ 0 ].characters.length < frame.characters.length )
+			{
+				return true;
+			}
+			else
+			{
+				return false;
+			}
+		}
+		else
+		{
+			// multiline
 
-	//inProgIndicator Function Description:
-	//Create/remove in progress indicator on the current artboard
-	//This helps the artist know whether they need to continue undoing in the event of a runtime error.
-	//When the artist executes enough undos, all indicators will be gone.
-	// function inProgIndicator ( bool, index )
-	// {
-	// 	log.h( "Beginning execution of inProgIndicator function with arguments: ::=>bool = " + bool + "::=>index = " + index );
-	// 	if ( bool )
-	// 	{
-	// 		log.l( "Adding the inprogress indicator." );
-	// 		var aB = artboards[ index ];
-	// 		var h = aB.artboardRect[ 3 ] - aB.artboardRect[ 1 ];
-	// 		var w = aB.artboardRect[ 2 ] - aB.artboardRect[ 0 ];
-	// 		var txt = layers[ 0 ].textFrames.add();
-	// 		txt.name = "inProg";
-	// 		txt.contents = "IN PROGRESS";
-	// 		txt.width = w;
-	// 		txt.height = Math.abs( h );
-	// 		txt.left = 0;
-	// 		txt.top = 0;
-	// 		txt.textRange.fillColor = labelColor.color;
-	// 		txt.locked = true;
-	// 	}
-	// 	else
-	// 	{
-	// 		log.l( "Removing in progress indicator." );
-	// 		var txt = layers[ 0 ].textFrames[ "inProg" ];
-	// 		txt.locked = false;
-	// 		txt.remove();
-	// 	}
-	// 	log.l( "End of inProgIndicator function. Successfully created or removed the indicator.\n" );
-	// }
+			var lineLength = frame.lines.length;
+			var allContentArr = frame.contents.split( /[\x03\r\n]/g );
+			var allContentReturnsLength = allContentArr.length;
+			var lastLineContent = frame.lines[ lineLength - 1 ].contents;
+			var lastAllContentContent = allContentArr[ allContentReturnsLength - 1 ];
+			return !( allContentReturnsLength == lineLength && ( lastLineContent == lastAllContentContent ) );
+		}
+		return false;
+	};
 
+	function shrinkOversetText ( frame )
+	{
+		var fontShrinkPercentage = 2;
+		var textShrinkAmt = ( fontShrinkPercentage / 100 ) * frame.textRange.characters[ 0 ].characterAttributes.horizontalScale;
+		if ( isOverset( frame ) )
+		{
+			while ( isOverset( frame ) )
+			{
+				frame.textRange.characterAttributes.horizontalScale = frame.textRange.characterAttributes.horizontalScale - textShrinkAmt;
+			}
+		}
+	};
 
-	//setPrinting Function Description
-	//Set all document layers to: printable = bool; 
-	//This allows for copying the artwork to the "inkLayer" to accurately generate the InkList.
-	//Use setPrintable(true) to turn on printing for all layers.
-	// function setPrintable ( bool )
-	// {
-	// 	log.h( "Beginning execution of setPrintable function. Setting all layers to printable = " + bool );
-	// 	for ( var p = 0; p < layers.length; p++ )
-	// 	{
-	// 		layers[ p ].printable = bool;
-	// 	}
-	// 	log.l( "End of setPrintable function. Successfully set printable property of all layers.\n" );
-	// }
-
-
-
-	//existInkLayer Function Description:
-	//check for the existence of an Ink Layer.
-	//If one exists, delete it and create a new one to ensure a clean slate
-	//Else Create one
-	// function existInkLayer ()
-	// {
-	// 	log.h( "Beginning execution of existInkLayer function." );
-	// 	var inkLayer;
-	// 	try
-	// 	{
-	// 		inkLayer = layers[ "Ink Layer" ];
-	// 		log.l( "An ink layer already exists." );
-	// 		inkLayer.remove();
-	// 		inkLayer = layers.add();
-	// 		inkLayer.name = "Ink Layer";
-	// 		inkLayer.printable = true;
-	// 		log.l( "Removed existing ink layer and created a new fresh one." );
-	// 	}
-	// 	catch ( e )
-	// 	{
-	// 		log.l( "No ink layer exists." );
-	// 		inkLayer = layers.add();
-	// 		inkLayer.name = "Ink Layer";
-	// 		inkLayer.printable = true;
-	// 		log.l( "Successfully created a new ink layer." );
-	// 	}
-	// 	log.l( "End of existInkLayer function. Returning " + inkLayer + ".\n" );
-	// 	return inkLayer;
-	// }
-
-
-
-	//duplicateArt Function Description:
-	//duplicate selected artwork (all unlocked artwork on active artboard) to the Ink Layer
-	// function duplicateArt ( sel, lay )
-	// {
-	// 	log.l( "Beginning execution of duplicateArt function." );
-	// 	for ( var d = 0; d < sel.length; d++ )
-	// 	{
-	// 		sel[ d ].duplicate( lay );
-	// 	}
-	// 	log.l( "End of duplicateArt function. The selected art has been successfully copied to " + lay );
-	// }
-
-
-
-	//generateInkList Function Description:
-	//push all non-undesirable inkList colors to array
-	// function generateInkList ()
-	// {
-	// 	log.h( "Beginning execution of generateInkList function." );
-
-	// 	docRef.selection = null;
-
-	createAction( "cleanup_swatches", CLEANUP_SWATCHES_ACTION_STRING );
-	//update the swatches to make sure we catch any deleted global spot colors
-	app.doScript( "delete_unused", "cleanup_swatches" );
-	app.doScript( "add_used", "cleanup_swatches" );
-	removeAction( "cleanup_swatches" );
-
-	// 	var inkList = [];
-
-
-
-	// 	docRef.selection = null;
-
-
-
-	// 	// app.redraw();
-	// 	var inkList = docRef.inkList;
-	// 	log.l( "The following colors are in the inkList.::" + inkList.join( "::" ) );
-	// 	var trueColors = [];
-
-	// 	if ( template )
-	// 	{
-	// 		log.l( "File is a script template. Set the undesirable colors to the template undesirables array." );
-	// 		undesirable = library.undesirables.template;
-	// 	}
-	// 	else
-	// 	{
-	// 		log.l( "File is not a template. Set the undesirable colors to the non-template undesirables array." );
-	// 		undesirable = library.undesirables.nonTemplate;
-	// 	}
-	// 	for ( var i = inkList.length - 1; i > -1; i-- )
-	// 	{
-	// 		var dontUse = false;
-	// 		var thisInk = inkList[ i ];
-	// 		if ( thisInk.inkInfo.printingStatus == InkPrintStatus.DISABLEINK )
-	// 		{
-	// 			log.l( thisInk + " is disabled. Skipping this color." );
-	// 			// inkList.splice(i,1);
-	// 			continue;
-	// 		}
-	// 		for ( var u = 0; u < undesirable.length; u++ )
-	// 		{
-	// 			if ( thisInk.name.toLowerCase() == undesirable[ u ] )
-	// 			{
-	// 				// inkList.splice(i,1);
-	// 				log.l( thisInk.name + " is undesirable. Skipping this color." );
-	// 				dontUse = true;
-	// 				break;
-	// 			}
-	// 		}
-
-	// 		//this swatch is printable and is not undesirable
-	// 		if ( !dontUse )
-	// 		{
-	// 			log.l( thisInk + " is printable and not undesirable. Pushing it to the trueColors array." );
-	// 			trueColors.push( inkList[ i ].name );
-	// 			if ( inkList[ i ].name == "Navy B" )
-	// 			{
-	// 				library.navyGray.navy = true;
-	// 			}
-	// 			else if ( inkList[ i ].name == "Navy 2 B" )
-	// 			{
-	// 				library.navyGray.navy2 = true;
-	// 			}
-	// 			else if ( inkList[ i ].name == "Gray B" )
-	// 			{
-	// 				library.navyGray.gray = true;
-	// 			}
-	// 			else if ( inkList[ i ].name == "Gray 2 B" )
-	// 			{
-	// 				library.navyGray.gray2 = true;
-	// 			}
-	// 			else if ( inkList[ i ].name == "Charcoal B" )
-	// 			{
-	// 				library.navyGray.charcoal = true;
-	// 			}
-	// 			else if ( inkList[ i ].name == "Charcoal 2 B" )
-	// 			{
-	// 				library.navyGray.charcoal2 = true;
-	// 			}
-	// 		}
-	// 	}
-
-	// 	if ( library.navyGray.navy && library.navyGray.navy2 )
-	// 	{
-	// 		log.e( "File contains Navy B and Navy 2 B." );
-	// 		errorList.push( "You have 'Navy B' AND 'Navy 2 B' in your mockup. Please undo, merge them, and try again." );
-	// 		trueColors = null;
-
-	// 	}
-
-	// 	if ( library.navyGray.gray && library.navyGray.gray2 )
-	// 	{
-	// 		log.e( "File contains Gray B and Gray 2 B." );
-	// 		errorList.push( "You have 'Gray B' AND 'Gray 2 B' in your mockup. Please undo, merge them, and try again." );
-	// 		trueColors = null;
-	// 	}
-
-	// 	if ( library.navyGray.charcoal && library.navyGray.charcoal2 )
-	// 	{
-	// 		log.e( "File contains Charcoal B and Charcoal 2 B." );
-	// 		errorList.push( "You have 'Charcoal B' AND 'Charcoal 2 B' in your mockup. Please undo, merge them, and try again." );
-	// 		trueColors = null;
-	// 	}
-
-	// 	log.l( "End of generateInkList function. Returning " + trueColors );
-	// 	return trueColors;
-	// }
-
-
+	function makeChip ( color, chipGroup, pos, dim )
+	{
+		log.l( "Creating color chip for " + color );
+		var curGroup = chipGroup.groupItems.add();
+		var chip = curGroup.pathItems.rectangle( pos[ 1 ], pos[ 0 ], dim.width, dim.height );
+		chip.fillColor = swatches[ color ].color;
+		chip.strokeColor = labelColor.color;
+		var areaTextBox = chip.duplicate();
+		areaTextBox.resize( 90, 70 );
+		var frame = curGroup.textFrames.areaText( areaTextBox );
+		frame.contents = color;
+		frame.textRange.characterAttributes.size = 14;
+		frame.textRange.characterAttributes.stroked = false;
+		frame.textRange.characterAttributes.fillColor = labelColor.color;
+		frame.textRange.characterAttributes.fillColor.tint = library.lightSwatches.indexOf( color.toLowerCase() ) > -1 ? 100 : 0;
+		frame.textRange.characterAttributes.baselineShift = -2
+		shrinkOversetText( frame );
+	}
 
 	//makeColorChips Function Description
 	//take array of colors for the current artboard and create one color chip for each
-	function makeColorChips ( colors, aB, dest )
+	function makeColorChips ( colors )
 	{
+		smashTimer.beginTask( "makeColorChips" );
 		log.h( "Beginning execution of makeColorChips function." );
-		var height = aB.artboardRect[ 1 ] - aB.artboardRect[ 3 ];
-		var relativeVerticalPlacement = aB.artboardRect[ 3 ] + ( height * .062 );
+		log.l( "Adding colors: " + colors.join( ", " ) );
 
+		var padding = 5; //padding between chips and edge of document
 
-		dest.locked = false;
-		dest.visible = true;
-
-
-		var chipGroup = dest.groupItems.add();
-		var a = docRef.artboards.getActiveArtboardIndex();
-		chipGroup.name = "Swatches for Artboard " + ( a + 1 );
-
-		//determine chip width. each chip should be 1/8th the width of the document;.
-		var chipWidth = aB.artboardRect[ 2 ] - aB.artboardRect[ 0 ];
-		chipWidth = chipWidth - 10;
-		chipWidth = chipWidth / 7;
-
-		//set chip height
+		//determine chip width. each chip should be 1/8th the width of the document - padding*2.
+		var chipWidth = ( docRef.width - padding * 2 ) / 8;
 		var chipHeight = 20;
+		var chipDim = { width: chipWidth, height: chipHeight };
+		var chipX = 0;
+		var chipY = 0;
 
-		//set position of first chip
-		var x = aB.artboardRect[ 0 ] - chipWidth + 5;
-		var y = relativeVerticalPlacement;
 
-		var swatchCounter = 1;
+		var tmpLay = docRef.layers.add();
+		tmpLay.name = "tmp";
 
-		//loop each color and create a chip and label
-		for ( var m = colors.length - 1; m > -1; m-- )
+		var chipGroup = tmpLay.groupItems.add();
+		chipGroup.name = "Artboard Swatches";
+
+		colors.sort().forEach( function ( color, index )
 		{
-			var curSwatch = colors[ m ];
-			if ( curSwatch.toLowerCase().indexOf( "process" ) == -1 )
-			{
-				try
-				{
-					var blahSwatch = swatches[ curSwatch ];
-				}
-				catch ( e )
-				{
-					//this swatch doesn't exist.. skip it.
-					log.e( curSwatch + " does not exist in the swatches panel. Skipping this color." )
-					continue;
-				}
-			}
-			var thisGroup = chipGroup.groupItems.add();
-			thisGroup.name = curSwatch;
-			var tint = 0;
+			var pos = [ chipX, chipY ];
+			makeChip( color, chipGroup, pos, chipDim );
+			chipX += chipWidth;
 
-			//determine tint of label color
-			for ( var t = 0; t < library.lightSwatches.length; t++ )
+			//if the next chip will go off the edge of the artboard, move it to the next row
+			//8 swatches per row means index%7==0 means we're on the 8th swatch
+			if ( index > 0 && index % 7 === 0 )
 			{
-				if ( curSwatch.toLowerCase() == library.lightSwatches[ t ] )
-				{
-					//this swatch is light colored
-					//set the label to display black so the label is still legible.
-					log.l( curSwatch + " is a light colored swatch. Setting the label color tint to 100." );
-					tint = 100;
-					break;
-				}
+				chipX = 0;
+				chipY -= chipHeight;
 			}
+		} )
 
-			// create the color chip and label
+		var upFromBottom;
+		var lay = artLayers[ 0 ];
+		var mockLay = findSpecificLayer( lay, "mockup", "any" ) || lay;
+		afc( docRef, "artboards" ).forEach( function ( ab )
+		{
+			var cg = chipGroup.duplicate( mockLay );
+			var bounds = getBoundsData( ab );
+			upFromBottom = bounds.height > bounds.width ? 60 : 50;
+			cg.left = bounds.left + padding;
+			cg.top = bounds.bottom + upFromBottom;
+		} )
 
-			//Create background box that holds the fill color of the chip.
+		tmpLay.remove();
 
-			if ( swatchCounter == 8 )
-			{
-				x = aB.artboardRect[ 0 ] - chipWidth + 5;
-				y = relativeVerticalPlacement - 20;
-			}
-			else if ( swatchCounter == 15 )
-			{
-				x = aB.artboardRect[ 0 ] - chipWidth + 5;
-				y = relativeVerticalPlacement - 40;
-			}
-			else if ( swatchCounter == 22 )
-			{
-				x = aB.artboardRect[ 0 ] - chipWidth + 5;
-				y = relativeVerticalPlacement - 60;
-			}
-			else if ( swatchCounter >= 29 )
-			{
-				log.l( "There are " + swatchCounter + " swatches in the document. This will likely cause issues with the RIP. User has been notified." );
-				errorList.push( "You probably have too many swatches in this document.\nThere may be issues with the RIP software with this many swatches.." );
-			}
-			var colorBox = thisGroup.pathItems.rectangle( y, x += chipWidth, chipWidth, chipHeight );
+		smashTimer.endTask( "makeColorChips" );
 
-
-			if ( curSwatch.indexOf( "Process" ) > -1 )
-			{
-				log.l( curSwatch + " is a process color. Setting fill to false and label color to black." );
-				colorBox.filled = false;
-				tint = 100;
-			}
-			else
-			{
-				log.l( curSwatch + " is a spot color. Setting fill of colorBox to " + curSwatch );
-				colorBox.filled = true;
-				colorBox.fillColor = swatches.getByName( curSwatch ).color;
-			}
-			if ( curSwatch != "White B" )
-			{
-				colorBox.stroked = false;
-			}
-			else
-			{
-				log.l( curSwatch + " is white. Adding a stroke to the colorBox to it remains visible." );
-				colorBox.stroked = true;
-				colorBox.strokeColor = labelColor.color;
-				colorBox.strokeWidth = 0.3;
-			}
-
-			//Create a box to hold area text and a textFrame inside that box.
-			var textBox = thisGroup.pathItems.rectangle( y - 6, x + 5, chipWidth - 10, 15 ); //no stroke/no fill container to hold the dimensions of the textFrame
-			textBox.filled = false;
-			textBox.stroked = false;
-			var textRefBox = thisGroup.textFrames.areaText( textBox ); //Text frame that holds the name of the swatch
-			textRefBox.contents = curSwatch;
-			textRefBox.textRange.fillColor = labelColor.color;
-			textRefBox.textRange.fillColor.tint = tint;
-			if ( textRefBox.textRange.characters.length > 8 && textRefBox.textRange.characters.length <= 15 )
-			{
-				textRefBox.textRange.characterAttributes.horizontalScale = 75;
-			}
-			else if ( textRefBox.textRange.characters.length > 15 && textRefBox.textRange.characters.length <= 20 )
-			{
-				textRefBox.textRange.characterAttributes.horizontalScale = 55;
-			}
-			else if ( textRefBox.textRange.characters.length > 20 )
-			{
-				textRefBox.textRange.characterAttributes.horizontalScale = 45;
-			}
-
-			log.l( "Successfully created a colorBox and inserted a text frame with the contents: " + textRefBox.contents );
-			swatchCounter++;
-		}
-		var chipGroupBounds = getBoundsData( chipGroup );
-		var bgRect = chipGroup.pathItems.rectangle( chipGroupBounds.top, chipGroupBounds.left, chipGroupBounds.width, chipGroupBounds.height );
-		bgRect.fillColor = makeNewSpotColor( "Info B" ).color;
-		bgRect.fillColor.tint = 0;
-		bgRect.stroked = false;
-		bgRect.zOrder( ZOrderMethod.SENDTOBACK );
-		dest.locked = true;
-		// dest.visible = false;
-		log.l( "End of makeColorChips function." );
+		return;
 	}
-
-
-
-	//getDest Function Description
-	//Determine proper layer to place color chips on
-	// function getDest ( template )
-	// {
-	// 	log.h( "Beginning execution of getDest function." );
-	// 	if ( template )
-	// 	{
-	// 		log.l( "File is a template. Setting destLayer to BKGRD, do not unlock" );
-	// 		var destLayer = layers[ "BKGRD, do not unlock" ];
-	// 	}
-	// 	else
-	// 	{
-	// 		log.l( "File is not a template." );
-	// 		try
-	// 		{
-	// 			var destLayer = layers[ "Artboard Swatches" ];
-	// 			log.l( "Set destLayer to \"Artboard Swatches\"" );
-	// 		}
-	// 		catch ( e )
-	// 		{
-	// 			var destLayer = layers.add();
-	// 			destLayer.name = "Artboard Swatches";
-	// 			destLayer.zOrder( ZOrderMethod.SENDTOBACK );
-	// 			log.l( "Created a new Artboard Swatches layer." );
-	// 		}
-	// 	}
-	// 	log.l( "End of getDest function. Returning " + destLayer );
-	// 	return destLayer;
-	// }
-
-
-
-	//lockUnlockLayers Function Description
-	//If the file is a template file, comb through layer structure and ensure
-	//all layers are correctly locked or unlocked as required
-	// function lockUnlockLayers()
-	// {
-	// 	log.h("Beginning execution of lockUnlockLayers function.");
-	// 	for(var L=0;L<layers.length;L++)
-	// 	{
-	// 		if(layers[L].name.indexOf("FD")>-1 && layers[L].name.indexOf("non-temp")==-1)
-	// 		{
-	// 			var thisLayer = layers[L];
-	// 			thisLayer.layers["Information"].locked = true;
-	// 			thisLayer.layers["Mockup"].locked = false;
-	// 			thisLayer.layers["Artwork Layer"].locked = false;
-	// 		}
-	// 		else if(layers[L].name == "Guides" || layers[L].name == "BKGRD, do not unlock")
-	// 		{
-	// 			layers[L].locked = true;
-	// 		}
-	// 	}
-	// 	log.l("End of lockUnlockLayers function.");
-	// }
-
-	// function unlockLayers ()
-	// {
-	// 	log.h( "Beginning execution of unlockLayers function." );
-	// 	var layLen = layers.length;
-	// 	var thislay;
-	// 	for ( var l = 0; l < layLen; l++ )
-	// 	{
-	// 		thisLay = layers[ l ];
-	// 		try
-	// 		{
-	// 			thisLay.layers[ "Artwork Layer" ].locked = false;
-	// 			thisLay.layers[ "Mockup" ].locked = false;
-	// 			thisLay.layers[ "Information" ].locked = true;
-	// 			thisLay.layers[ "Prepress" ].visible = false;
-	// 		}
-	// 		catch ( e )
-	// 		{
-	// 			log.l( "Looks like this isn't a template layer. moving on." );
-	// 		}
-	// 	}
-	// }
 
 	function preflightSwatches ()
 	{
@@ -662,6 +327,28 @@ function container ()
 			result = false;
 			alert( "Document contains the following colors that need to be merged:\n" + dupSwatches.join( "\n" ) );
 		}
+
+		if ( library.navyGray.navy && library.navyGray.navy2 )
+		{
+			log.e( "File contains Navy B and Navy 2 B." );
+			errorList.push( "You have 'Navy B' AND 'Navy 2 B' in your mockup. Please undo, merge them, and try again." );
+			trueColors = null;
+
+		}
+
+		if ( library.navyGray.gray && library.navyGray.gray2 )
+		{
+			log.e( "File contains Gray B and Gray 2 B." );
+			errorList.push( "You have 'Gray B' AND 'Gray 2 B' in your mockup. Please undo, merge them, and try again." );
+			trueColors = null;
+		}
+
+		if ( library.navyGray.charcoal && library.navyGray.charcoal2 )
+		{
+			log.e( "File contains Charcoal B and Charcoal 2 B." );
+			errorList.push( "You have 'Charcoal B' AND 'Charcoal 2 B' in your mockup. Please undo, merge them, and try again." );
+			trueColors = null;
+		}
 		return result;
 	}
 
@@ -673,21 +360,18 @@ function container ()
 		w.show();
 	}
 
-
-	function getGradientColors ( item )
-	{
-		var gradientColors = [];
-		var newGradient = docRef.gradients.add();
-		afc( newGradient, "gradientStops" ).forEach( function ( stop )
-		{
-			gradientColors.push( stop.color.name );
-		} );
-		return getUnique( gradientColors );
-	}
-
 	function getItemColors ( item )
 	{
-		if ( item.guides )
+		if ( item.typename.match( /compound/i ) )
+		{
+			if ( !item.pathItems.length )
+			{
+				item = cleanupCompoundPath( item );
+			}
+			item = item.pathItems[ 0 ];
+		}
+
+		if ( item.guides || ( !item.filled && !item.stroked ) )
 		{
 			item.remove();
 			return;
@@ -725,39 +409,36 @@ function container ()
 			}
 
 			return;
-			if ( curProp.typename.match( /gradient/i ) )
+
+		} );
+
+		curItemColors.forEach( function ( curColor )
+		{
+			if ( curColor.spot )
 			{
-				afc( curProp.gradient, "gradientStops" ).forEach( function ( stop )
+				var curName = curColor.spot.name;
+				var lowName = curName.toLowerCase().replace( /\s*/g, "" );
+				if ( !colorsUsed.indexOf( curName ) > -1 )
 				{
-					if ( stop.color.typename.match( /spot/i ) && BOOMBAH_APPROVED_COLORS.indexOf( stop.color.spot.name ) > -1 )
+					if ( prodColors.indexOf( lowName ) > -1 )
 					{
-						colorsUsed.push( stop.color.spot.name );
+						return;
+					}
+					else if ( goodSpotColors.indexOf( lowName ) > -1 )
+					{
+						colorsUsed.push( curName );
 					}
 					else
 					{
 						wrongColor = true;
 					}
-				} );
+				}
 			}
-			else if ( curProp )
+			else
 			{
-				if ( curProp.spot && BOOMBAH_APPROVED_COLORS.indexOf( curProp.spot.name ) > -1 )
-				{
-					colorsUsed.push( curProp.spot.name );
-				}
-				else
-				{
-					wrongColor = true;
-				}
+				log.l( "WrongColor: " + curColor.name );
+				wrongColor = true;
 			}
-
-		} );
-
-
-		// debugger;
-		curItemColors.forEach( function ( curColor )
-		{
-			( curColor.typename.match( /spot/i ) && BOOMBAH_APPROVED_COLORS.indexOf( curColor.spot.name ) > -1 ) ? colorsUsed.push( curColor.spot.name ) : wrongColor = true;
 		} );
 
 
@@ -769,31 +450,41 @@ function container ()
 
 	function processPatternFills ( usedPatternSwatches )
 	{
+		smashTimer.beginTask( "processPatternFills" );
+		log.h( "Processing pattern Fills: " + usedPatternSwatches.join( "," ) );
 		var tmpPatternLay = docRef.layers.add();
-		app.userInteractionLevel = UserInteractionLevel.DONTDISPLAYALERTS;
 		docRef.selection = null;
 		usedPatternSwatches.forEach( function ( pswatch )
 		{
-			var rect = inkLayer.pathItems.rectangle( 0, 0, 1, 1 );
+			var rect = tmpPatternLay.pathItems.rectangle( 0, 0, 1, 1 );
 			rect.fillColor = swatches[ pswatch ].color;
 			rect.strokeColor = new NoColor();
 			rect.selected = true;
 		} );
 
+		app.userInteractionLevel = UserInteractionLevel.DONTDISPLAYALERTS;
+
 		app.executeMenuCommand( "expandStyle" );
 		app.executeMenuCommand( "Expand3" );
 
-		afc( inkLayer, "groupItems" ).forEach( function ( g )
+		app.userInteractionLevel = UserInteractionLevel.DISPLAYALERTS;
+
+
+		smashTimer.beginTask( "ungroupingExpandedPatterns" );
+		afc( tmpPatternLay, "groupItems" ).forEach( function ( g )
 		{
 			//as far as i know, expanding a pattern fill will always result in a clip group
-			//which consists of a rectangle as a clipping mask and a group of the items
+			//which consists of a rectangle as a clipping mask and an "art group" of the items
 			//that comprise the pattern fill.
-			//so ungroup that art group to the tmpPatternGroup for color checking
+			//so ungroup that "art group" to the tmpPatternGroup for color checking
 			ungroup( g.groupItems[ 0 ].groupItems[ 0 ], tmpPatternLay, 0 );
 		} )
+		smashTimer.endTask( "ungroupingExpandedPatterns" );
 
-		//in theory... this layer should only contain the artwork plain and simple artwork that comprises
-		//each of the pattern fills that ar eused. so we can just check the colors of the items in this layer
+
+		smashTimer.beginTask( "getPatternColors" );
+		//in theory... this layer should only contain the plain and simple artwork that comprises
+		//each of the pattern fills that are used. so we can just check the colors of the items in this layer
 		afc( tmpPatternLay, "pageItems" ).forEach( function ( p )
 		{
 			var path;
@@ -802,6 +493,11 @@ function container ()
 				if ( !p.pathItems.length )
 				{
 					p = cleanupCompoundPath( p );
+				}
+				if ( !p )
+				{
+					p.remove();
+					return;
 				}
 				path = p.pathItems[ 0 ] || p;
 			}
@@ -812,66 +508,71 @@ function container ()
 			else
 			{
 				errorList.push( "There's some strange artwork inside the pattern: " );
+				errorList.push( "This item is a: " + path.typename );
 				return;
 			}
 			getItemColors( path );
 		} );
+		smashTimer.endTask( "getPatternColors" );
 
 		tmpPatternLay.remove();
-		app.userInteractionLevel = UserInteractionLevel.DISPLAYALERTS;
+
+		smashTimer.endTask( "processPatternFills" );
 	}
 
-	function getCurArtboard ( lay )
+	function getCurArtboardIndex ( lay )
 	{
 		var abs = afc( docRef, "artboards" );
 		var abMatches = {}; //{index: #, matches: #, 1:25}
-		var cab; //current artboard
+		var cabIndex; //current artboard index
 		if ( abs.length === 1 )
 		{
-			return abs[ 0 ];
+			return 0;
 		}
 
-		afc( lay, "pageItems" ).forEach( function ( p, )
+		afc( lay, "pageItems" ).forEach( function ( p )
 		{
 			abs.forEach( function ( ab, i )
 			{
+				var curAbName = ab.name;
 				if ( isContainedWithinBuffer( p, ab, 50 ) )
 				{
-					abMatches[ i ] = abMatches[ i ] ? abMatches[ i ] + 1 : 1;
+					if ( !abMatches[ curAbName ] )
+					{
+						abMatches[ curAbName ] = { index: i, matches: 1 };
+					}
+					else
+					{
+						abMatches[ curAbName ].matches++;
+					}
 				}
 			} )
 		} );
-		afc( lay, "layers" ).forEach( function ( l )
-		{
 
-		} );
-		debugger;
-		var infoLayer = findSpecificLayer( lay, "Info", "any" );
-		if ( infoLayer )
+		var mostMatches = 0; //number of matches for a given artboard. just pick the artboard with the most matches.
+
+		for ( var ab in abMatches )
 		{
-			afc( infoLayer, "textFrames" ).map( function ( tf )
+			if ( abMatches[ ab ].matches > mostMatches )
 			{
-				if ( cab ) return;
+				mostMatches = abMatches[ ab ].matches;
+				cabIndex = abMatches[ ab ].index;
+			}
+		};
 
-				afc( docRef, "artboards" ).forEach( function ( ab, i ) 
-				{
-					if ( isContainedWithinBuffer( tf, ab, 50 ) )
-					{
-						cab = ab;
-						artboards.setActiveArtboardIndex( i );
-					}
-				} );
-			} );
-		}
+		cabIndex = cabIndex || 0;
 
-		return cab;
+		return cabIndex;
 	}
 
 	function extractArtworkFromMockup ( lay )
 	{
-		afc( lay, "pageItems" ).forEach( function ( item )
+		afc( lay, "pageItems" ).backForEach( function ( item )
 		{
-			if ( item.name.match( /notes|shadow/i ) ) return;
+			if ( item.name.match( /notes|shadow/i ) || item.typename.match( /raster/i ) )
+			{
+				return;
+			}
 
 			item.duplicate( inkLayer );
 		} );
@@ -884,96 +585,131 @@ function container ()
 		} )
 	}
 
-	function loopLayers ( layers )
+	function breakInkLayerSymbols ( lay )
 	{
-		//loop each garment layer and create color chips on the corresponding artboard.
-		afc( docRef, "layers" ).forEach( function ( lay, i )
+		smashTimer.beginTask( "breakInkLayerSymbols" );
+		afc( docRef, "symbolItems" ).forEach( function ( s )
 		{
-			if ( !lay.name.match( /([a-z]*[-_][\d]{1,})|(mockup)/i ) )
+			if ( s.layer === lay )
 			{
-				return;
+				s.breakLink();
 			}
-			var mockLayer = lay.name.match( /mockup/i ) ? lay : findSpecificLayer( lay, "Mockup", "any" );
+		} )
+		smashTimer.endTask( "breakInkLayerSymbols" );
+	}
+
+	function outlineTextFrames ( lay )
+	{
+		smashTimer.beginTask( "outlineTextFrames" );
+		afc( docRef, "textFrames" ).forEach( function ( s )
+		{
+			if ( s.layer === lay )
+			{
+				s.createOutline();
+			}
+		} )
+		smashTimer.endTask( "outlineTextFrames" );
+	}
+
+	function populateInkLayer ()
+	{
+
+		smashTimer.beginTask( "populateInkLayer" );
+
+		//loop each layer in the document and if it's a template or a "mockup" layer,
+		//then we'll check the colors of the artwork in that layer
+		artLayers = afc( docRef, "layers" ).filter( function ( l )
+		{
+			return l.name.match( /([a-z]+[-_][\d]+)|(mockup)/i );
+		} );
+
+		log.l( "Getting artwork from layers::" + artLayers.map( function ( al ) { return al.name } ) );
+
+		artLayers.forEach( function ( lay, i )
+		{
+			docIsTemplate = lay.name.match( /mockup/i ) ? false : true;
+
+			var mockLayer = docIsTemplate ? findSpecificLayer( lay, "Mockup", "any" ) : lay;
+			var artLayer = docIsTemplate ? findSpecificLayer( lay, "Artwork", "any" ) : lay;
+
 			if ( !mockLayer )
 			{
-				errorList.push( "Could not find mockup layer for " + lay.name );
-				return;
+				errorList.push( "No mockup layer found in " + lay.name );
+				errorList.push( "results may not be entirely accurate." );
+				mockLayer = lay;
 			}
+
+			//find the artboard that corresponds to the current garment layer
+			var curArtboardIndex = docIsTemplate ? getCurArtboardIndex( inkLayer ) : -1;
+
+			removeOldChips( mockLayer );
+
 
 
 			extractArtworkFromMockup( mockLayer );
-
-
-			//ungroup the inkLayer so we have only low level pageItems with no container objects
-			ungroup( inkLayer, inkLayer, 0 );
-
-			inkLayer.hasSelectedArtwork = true;
-			app.executeMenuCommand( "expandStyle" );
-			docRef.selection = null;
-
-			//handle any resulting group items from expanding the appearances
-			afc( inkLayer, "groupItems" ).forEach( function ( gi )
+			if ( artLayer )
 			{
-				ungroup( gi, inkLayer, 0 );
-			} );
-
-
-			//process any compoundPaths on the ink layer
-			//extract the first pathItem out and delete the rest.
-			afc( inkLayer, "compoundPathItems" ).forEach( function ( cpi )
-			{
-				if ( !cpi.pathItems.length )
-				{
-					cpi = cleanupCompoundPath( cpi );
-				}
-
-				if ( cpi.typename.match( /compound/i ) )
-				{
-					if ( cpi.pathItems.length > 1 )
-					{
-						cpi.pathItems[ 0 ].duplicate( inkLayer );
-					}
-					cpi.remove();
-				}
-				else
-				{
-					cpi.duplicate( inkLayer );
-				}
-			} )
-
-			//check the fill/stroke of the remaining pathItems
-			afc( inkLayer, "pathItems" ).forEach( function ( item )
-			{
-				getItemColors( item );
-			} );
-
-			afc( inkLayer, "pageItems" ).forEach( function ( item )
-			{
-				item.remove();
-			} );
-
-			docRef.selection = null;
-
-			//if there were any pattern fills,
-			//draw a rectangle for each one and expand the object
-			//then extract the fill colors from it and add them to
-			//the colorsUsed array
-
-			if ( usedPatternSwatches.length )
-			{
-				processPatternFills( usedPatternSwatches );
+				extractArtworkFromMockup( artLayer );
 			}
-
-
-			//trim down the colorsUsed array to only unique values
-			colorsUsed = getUnique( colorsUsed );
-
-			//create the color chips and place them at teh bottom of the artboard.
-			makeColorChips( colorsUsed, getCurArtboard( lay ), destLayer );
 		} );
+
+		smashTimer.endTask( "populateInkLayer" );
 	}
 
+	function getColorsFromInkLayer ()
+	{
+		smashTimer.beginTask( "getColorsFromInkLayer" );
 
+		breakInkLayerSymbols( inkLayer );
+		outlineTextFrames( inkLayer );
+
+		//expand any apperances
+		//we want only items with simple fill and stroke colors
+		inkLayer.hasSelectedArtwork = true;
+		app.userInteractionLevel = UserInteractionLevel.DONTDISPLAYALERTS;
+
+		app.executeMenuCommand( "expandStyle" );
+
+		app.userInteractionLevel = UserInteractionLevel.DISPLAYALERTS;
+
+
+		smashTimer.beginTask( "ungroupInkLayer" );
+		ungroup( inkLayer, inkLayer, 0 );
+		smashTimer.endTask( "ungroupInkLayer" );
+
+
+		smashTimer.beginTask( "getColorsFromInkLayer" );
+		afc( inkLayer ).forEach( function ( item )
+		{
+			getItemColors( item );
+		} );
+		smashTimer.endTask( "getColorsFromInkLayer" );
+
+		inkLayer.remove();
+		inkLayer = docRef.layers.add();
+		inkLayer.name = "Ink Layer";
+
+		docRef.selection = null;
+	}
+
+	function getInkLayer ()
+	{
+		afc( docRef, "layers" ).forEach( function ( lay )
+		{
+			if ( lay.name.match( /ink|wrong/i ) )
+			{
+				lay.locked = false;
+				lay.visible = true;
+				lay.remove();
+			}
+		} )
+
+		inkLayer = layers.add();
+		inkLayer.name = "Ink Layer";
+
+		wrongColorLayer = layers.add();
+		wrongColorLayer.name = "Wrong Color Artwork";
+	}
 
 
 
@@ -987,16 +723,8 @@ function container ()
 	////Data Storage////
 	////////////////////
 
-	var library = {
-		undesirables:
-		{
-			template: [ 'jock tag b', 'thru-cut', 'info b', 'edge', 'cut line', 'cut', 'cutline', 'sewline', 'sew', 'sew line' ],
-			nonTemplate: [ 'process cyan', 'process magenta', 'process yellow', 'process black', 'cut line', 'cut', 'edge', 'edge1', 'edge2', 'deleted global color', //
-				'deleted golbal color 1', 'deleted global color 2', 'deleted global color 3', 'deleted global color 4', 'deleted global color 5', //
-				'thru-cut', 'sew line', 'sewline', 'info b', 'jock tag b'
-			]
-		},
-
+	var library =
+	{
 		lightSwatches: [ "twitch b", "flo yellow b", "dark flesh b", "flesh b", "soft pink b", "vegas gold b", "optic yellow b", "yellow b", "lime green b", "white b", "gray b", "gray 2 b" ],
 		navyGray:
 		{
@@ -1022,17 +750,27 @@ function container ()
 		return false;
 	}
 
+	smashTimer.beginTask( "initDocument" );
+
 	//Global Variables
 	var docRef = app.activeDocument;
 	var layers = docRef.layers;
 	var swatches = docRef.swatches;
 	var artboards = docRef.artboards;
+	var docIsTemplate = true; //default to true. if not a converted template, this will change to false
 	var errorList = [];
 	var scriptNotes = [];
 
 	var colorsUsed = [];
 	var usedPatternSwatches = [];
+	var artLayers = [];
 
+	//make an array of all "good" colors
+	//anything not in this list will be considered incorrect.
+	var goodSpotColors = BOOMBAH_APPROVED_COLORS.map( function ( color ) { return color.toLowerCase().replace( /\s*/g, "" ) } );
+	goodSpotColors = getUnique( goodSpotColors );
+
+	var prodColors = BOOMBAH_PRODUCTION_COLORS.map( function ( color ) { return color.toLowerCase().replace( /\s*/g, "" ) } );
 
 
 	if ( !preflightSwatches() )
@@ -1040,73 +778,92 @@ function container ()
 		return false;
 	}
 
-	createAction( "cleanup_swatches", CLEANUP_SWATCHES_ACTION_STRING );
-
 	var labelColor = getLabelColor();
 
-	displayCheckBoombahLogoDialog();
+	smashTimer.endTask( "initDocument" );
+
+	if ( !user.match( /will\.dowling/i ) )
+	{
+		displayCheckBoombahLogoDialog();
+	}
 
 	docRef.selection = null;
 
-	//
-	//// initialize the layers
-	//
-	destLayer = findSpecificLayer( layers, "bkgrd", "any" ) || layers.add();
-	destLayer.name = "BKGRD, do not unlock";
+	afc( docRef, "layers" ).forEach( function ( l ) { l.visible = l.locked = false } );
 
-	var inkLayer = findSpecificLayer( layers, "Ink Layer" );
-	if ( inkLayer )
-	{
-		inkLayer.visible = true;
-		inkLayer.locked = false;
-		inkLayer.remove();
-	}
-	inkLayer = layers.add();
-	inkLayer.name = "Ink Layer";
-
-	var wrongColorLayer = layers.add();
-	wrongColorLayer.name = "Wrong Color Artwork";
+	var inkLayer, wrongColorLayer;
+	getInkLayer();
 
 
 
 
 
 
-	//remove existing color chips if they already exist
 	removeOldChips();
-
-
-	//loop each layer in the document and if it's a template or a "mockup" layer,
-	//then we'll check the colors of the artwork in that layer
-	loopLayers( layers );
-
-	inkLayer.visible = true;
-	inkLayer.printable = true;
+	populateInkLayer();
+	getColorsFromInkLayer();
 
 
 
 
 
 
-	//if there was any wrong color artwork,
-	//duplicate it to a new layer so it's easy for the artist to find.
-	if ( wrongColorLayer.pageItems.length )
+
+
+	afc( docRef, "layers" ).forEach( function ( lay )
 	{
-		errorList.push( "Some artwork was found that was not using Boombah colors. It has been duplicated to a new layer called 'Wrong Color Artwork'." );
+		lay.visible = true;
+		lay.locked = false;
+		if ( lay.name.match( /bkgrd|guide/i ) )
+		{
+			lay.locked = true
+		}
+		else if ( lay.name.match( /ink.*layer/i ) )
+		{
+			lay.remove();
+		}
+		else if ( lay.name.match( /wrong/i ) )
+		{
+			lay.pageItems.length ? errorList.push( "Some artwork was found that was not using Boombah colors. It has been duplicated to a new layer called 'Wrong Color Artwork'." ) : wrongColorLayer.remove();;
+		}
+	} );
+
+	//if there were any pattern fills,
+	//draw a rectangle for each one and expand the object
+	//then extract the fill colors from it and add them to
+	//the colorsUsed array
+
+	if ( usedPatternSwatches.length )
+	{
+		processPatternFills( usedPatternSwatches );
+	}
+	//trim down the colorsUsed array to only unique values
+	colorsUsed = getUnique( colorsUsed );
+
+
+	docRef.selection = null;
+
+	//create the color chips and place them at the bottom of each artboard.
+	makeColorChips( colorsUsed );
+
+	// docRef.save();
+
+	if ( errorList.length > 0 )
+	{
+		sendErrors( errorList );
 	}
 	else
 	{
-		wrongColorLayer.remove();
+		alert( "Consider your colors thoroughly SMASHED!" );
 	}
 
-	inkLayer.remove();
-
-	docRef.selection = null;
-
-	if ( errorList.length > 0 )
-		sendErrors( errorList );
+	smashTimer.logEnd();
+	log.l( "Color_Smasher took: " + ( smashTimer.calculate() / 60 ) + "seconds" );
 
 	printLog();
+
+	app.userInteractionLevel = UserInteractionLevel.DISPLAYALERTS;
+
 
 	////////End/////////
 	///Function Calls///
