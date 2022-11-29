@@ -398,9 +398,10 @@ function container ()
 			}
 			else if ( curProp.typename.match( /pattern/i ) )
 			{
-				if ( usedPatternSwatches.indexOf( curProp.pattern.name ) < 0 )
+				if ( usedPatternSwatchNames.indexOf( curProp.pattern.name ) < 0 )
 				{
-					usedPatternSwatches.push( curProp.pattern.name );
+					usedPatternSwatchNames.push( curProp.pattern.name );
+					usedPatternSwatches.push( curProp );
 				}
 			}
 			else
@@ -457,7 +458,8 @@ function container ()
 		usedPatternSwatches.forEach( function ( pswatch )
 		{
 			var rect = tmpPatternLay.pathItems.rectangle( 0, 0, 1, 1 );
-			rect.fillColor = swatches[ pswatch ].color;
+			// rect.fillColor = swatches[ pswatch ].color;
+			rect.fillColor = pswatch;
 			rect.strokeColor = new NoColor();
 			rect.selected = true;
 		} );
@@ -507,8 +509,6 @@ function container ()
 			}
 			else
 			{
-				errorList.push( "There's some strange artwork inside the pattern: " );
-				errorList.push( "This item is a: " + path.typename );
 				return;
 			}
 			getItemColors( path );
@@ -763,6 +763,7 @@ function container ()
 
 	var colorsUsed = [];
 	var usedPatternSwatches = [];
+	var usedPatternSwatchNames = [];
 	var artLayers = [];
 
 	//make an array of all "good" colors
@@ -803,11 +804,15 @@ function container ()
 	populateInkLayer();
 	getColorsFromInkLayer();
 
+	//if there were any pattern fills,
+	//draw a rectangle for each one and expand the object
+	//then extract the fill colors from it and add them to
+	//the colorsUsed array
 
-
-
-
-
+	if ( usedPatternSwatches.length )
+	{
+		processPatternFills( usedPatternSwatches );
+	}
 
 
 	afc( docRef, "layers" ).forEach( function ( lay )
@@ -828,15 +833,7 @@ function container ()
 		}
 	} );
 
-	//if there were any pattern fills,
-	//draw a rectangle for each one and expand the object
-	//then extract the fill colors from it and add them to
-	//the colorsUsed array
 
-	if ( usedPatternSwatches.length )
-	{
-		processPatternFills( usedPatternSwatches );
-	}
 	//trim down the colorsUsed array to only unique values
 	colorsUsed = getUnique( colorsUsed );
 
