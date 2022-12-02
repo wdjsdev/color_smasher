@@ -362,16 +362,17 @@ function container ()
 
 	function getItemColors ( item )
 	{
+		var testItem = item;
 		if ( item.typename.match( /compound/i ) )
 		{
 			if ( !item.pathItems.length )
 			{
 				item = cleanupCompoundPath( item );
 			}
-			item = item.pathItems[ 0 ];
+			testItem = item.pathItems[ 0 ];
 		}
 
-		if ( item.guides || ( !item.filled && !item.stroked ) )
+		if ( item.guides || ( !testItem.filled && !testItem.stroked ) )
 		{
 			item.remove();
 			return;
@@ -382,9 +383,9 @@ function container ()
 
 		[ "fill", "stroke" ].forEach( function ( prop )
 		{
-			var curProp = item[ prop + "Color" ];
+			var curProp = testItem[ prop + "Color" ];
 
-			if ( !item[ prop.replace( /(e$)?/i, "" ) + "ed" ] )
+			if ( !testItem[ prop.replace( /e$?/i, "" ) + "ed" ] )
 			{
 				return;
 			}
@@ -588,13 +589,21 @@ function container ()
 	function breakInkLayerSymbols ( lay )
 	{
 		smashTimer.beginTask( "breakInkLayerSymbols" );
+		var tmpLay = layers.add();
 		afc( docRef, "symbolItems" ).forEach( function ( s )
 		{
 			if ( s.layer === lay )
 			{
+				s.moveToBeginning( tmpLay );
 				s.breakLink();
+				ungroup( tmpLay, lay, 0, cleanupSymbolContents );
 			}
+			afc( tmpLay ).concat( afc( tmpLay, "layers" ) ).forEach( function ( i )
+			{
+				i.remove();
+			} )
 		} )
+		tmpLay.remove();
 		smashTimer.endTask( "breakInkLayerSymbols" );
 	}
 
@@ -605,9 +614,14 @@ function container ()
 		{
 			if ( s.layer === lay )
 			{
-				s.createOutline();
+				var blah = s.createOutline();
+				blah.selected = true;
 			}
 		} )
+		app.userInteractionLevel = UserInteractionLevel.DONTDISPLAYALERTS;
+		app.executeMenuCommand( "expandStyle" );
+		app.executeMenuCommand( "Expand3" );
+		app.userInteractionLevel = UserInteractionLevel.DISPLAYALERTS;
 		smashTimer.endTask( "outlineTextFrames" );
 	}
 
@@ -663,6 +677,21 @@ function container ()
 		breakInkLayerSymbols( inkLayer );
 		outlineTextFrames( inkLayer );
 
+
+
+
+		smashTimer.beginTask( "ungroupInkLayer" );
+		ungroup( inkLayer, inkLayer, 0 );
+
+		afc( inkLayer, "pathItems" ).forEach( function ( path )
+		{
+			if ( path.guides )
+			{
+				path.remove();
+			}
+		} )
+
+
 		//expand any apperances
 		//we want only items with simple fill and stroke colors
 		inkLayer.hasSelectedArtwork = true;
@@ -671,10 +700,10 @@ function container ()
 		app.executeMenuCommand( "expandStyle" );
 
 		app.userInteractionLevel = UserInteractionLevel.DISPLAYALERTS;
-
-
-		smashTimer.beginTask( "ungroupInkLayer" );
-		ungroup( inkLayer, inkLayer, 0 );
+		afc( inkLayer, "groupItems" ).forEach( function ( gi )
+		{
+			ungroup( gi, inkLayer, 0 );
+		} );
 		smashTimer.endTask( "ungroupInkLayer" );
 
 
