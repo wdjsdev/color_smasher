@@ -482,6 +482,12 @@ function container ()
 			//so ungroup that "art group" to the tmpPatternGroup for color checking
 			ungroup( g.groupItems[ 0 ].groupItems[ 0 ], tmpPatternLay, 0 );
 		} )
+
+		//now make sure there's no remaining clip groups
+		recursiveDig(tmpPatternLay,function(curItem)
+		{
+			curItem.moveToBeginning(tmpPatternLay);
+		});
 		smashTimer.endTask( "ungroupingExpandedPatterns" );
 
 
