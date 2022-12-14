@@ -615,6 +615,7 @@ function container ()
 
 	function outlineTextFrames ( lay )
 	{
+		docRef.selection = null;
 		smashTimer.beginTask( "outlineTextFrames" );
 		afc( docRef, "textFrames" ).forEach( function ( s )
 		{
@@ -626,6 +627,7 @@ function container ()
 		} )
 		app.userInteractionLevel = UserInteractionLevel.DONTDISPLAYALERTS;
 		app.executeMenuCommand( "expandStyle" );
+		
 		app.executeMenuCommand( "Expand3" );
 		app.userInteractionLevel = UserInteractionLevel.DISPLAYALERTS;
 		smashTimer.endTask( "outlineTextFrames" );
@@ -880,6 +882,9 @@ function container ()
 
 	// docRef.save();
 
+	smashTimer.logEnd();
+	log.l( "Color_Smasher took: " + ( smashTimer.calculate() / 1000 ) + "seconds" );
+
 	if ( errorList.length > 0 )
 	{
 		sendErrors( errorList );
@@ -889,8 +894,7 @@ function container ()
 		alert( "Consider your colors thoroughly SMASHED!" );
 	}
 
-	smashTimer.logEnd();
-	log.l( "Color_Smasher took: " + ( smashTimer.calculate() / 60 ) + "seconds" );
+	
 
 	printLog();
 
