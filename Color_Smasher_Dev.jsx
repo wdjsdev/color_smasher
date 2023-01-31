@@ -39,29 +39,29 @@ function container ()
 		{
 			$.writeln( "///////\n////////\nUsing dev utilities\n///////\n////////" );
 			var devUtilPath = "~/Desktop/automation/utilities/";
-			utilFiles =[ devUtilPath + "Utilities_Container.js", devUtilPath + "Batch_Framework.js" ];
+			utilFiles = [ devUtilPath + "Utilities_Container.js", devUtilPath + "Batch_Framework.js" ];
 			return utilFiles;
 		}
 
 		var dataResourcePath = customizationPath + "Library/Scripts/Script_Resources/Data/";
-		
-		for(var u=0;u<utilNames.length;u++)
+
+		for ( var u = 0; u < utilNames.length; u++ )
 		{
-			var utilFile = new File(dataResourcePath + utilNames[u] + ".jsxbin");
-			if(utilFile.exists)
+			var utilFile = new File( dataResourcePath + utilNames[ u ] + ".jsxbin" );
+			if ( utilFile.exists )
 			{
-				utilFiles.push(utilFile);	
+				utilFiles.push( utilFile );
 			}
-			
+
 		}
 
-		if(!utilFiles.length)
+		if ( !utilFiles.length )
 		{
-			alert("Could not find utilities. Please ensure you're connected to the appropriate Customization drive.");
+			alert( "Could not find utilities. Please ensure you're connected to the appropriate Customization drive." );
 			return [];
 		}
 
-		
+
 		return utilFiles;
 
 	}
@@ -72,7 +72,7 @@ function container ()
 		eval( "#include \"" + utilities[ u ] + "\"" );
 	}
 
-	if ( !valid || !utilities.length) return;
+	if ( !valid || !utilities.length ) return;
 
 
 
@@ -467,10 +467,10 @@ function container ()
 		} )
 
 		//now make sure there's no remaining clip groups
-		recursiveDig(tmpPatternLay,function(curItem)
+		recursiveDig( tmpPatternLay, function ( curItem )
 		{
-			curItem.moveToBeginning(tmpPatternLay);
-		});
+			curItem.moveToBeginning( tmpPatternLay );
+		} );
 		smashTimer.endTask( "ungroupingExpandedPatterns" );
 
 
@@ -610,7 +610,7 @@ function container ()
 		} )
 		app.userInteractionLevel = UserInteractionLevel.DONTDISPLAYALERTS;
 		app.executeMenuCommand( "expandStyle" );
-		
+
 		// app.executeMenuCommand( "Expand3" );
 		app.userInteractionLevel = UserInteractionLevel.DISPLAYALERTS;
 		smashTimer.endTask( "outlineTextFrames" );
@@ -672,8 +672,11 @@ function container ()
 
 
 		smashTimer.beginTask( "ungroupInkLayer" );
+
+		log.l( "Ungrouping " + inkLayer.pageItems.length + " items on ink layer" )
 		ungroup( inkLayer, inkLayer, 0 );
 
+		log.l( "Ungrouped. Removing guides." )
 		afc( inkLayer, "pathItems" ).forEach( function ( path )
 		{
 			if ( path.guides )
@@ -685,24 +688,33 @@ function container ()
 
 		//expand any apperances
 		//we want only items with simple fill and stroke colors
+
+		log.l( "Expanding appearances on " + inkLayer.pageItems.length + " items." );
+		smashTimer.beginTask( "expandAppearance" );
 		inkLayer.hasSelectedArtwork = true;
+
 		app.userInteractionLevel = UserInteractionLevel.DONTDISPLAYALERTS;
 
 		app.executeMenuCommand( "expandStyle" );
 
 		app.userInteractionLevel = UserInteractionLevel.DISPLAYALERTS;
+
+		log.l( "Appearance expansion complete. Ungrouping again." );
 		afc( inkLayer, "pageItems" ).forEach( function ( gi )
 		{
-			if(!gi.typename.match(/group/i))
+			if ( !gi.typename.match( /group/i ) )
 			{
 				return;
 			}
 			ungroup( gi, inkLayer, 0 );
 		} );
+		smashTimer.endTask( "expandAppearance" );
 		smashTimer.endTask( "ungroupInkLayer" );
 
 
 		smashTimer.beginTask( "getColorsFromInkLayer" );
+
+		log.l( "inkLayer.pageItems.length = " + inkLayer.pageItems.length );
 		afc( inkLayer ).forEach( function ( item )
 		{
 			getItemColors( item );
@@ -881,7 +893,7 @@ function container ()
 		alert( "Consider your colors thoroughly SMASHED!" );
 	}
 
-	
+
 
 	printLog();
 
