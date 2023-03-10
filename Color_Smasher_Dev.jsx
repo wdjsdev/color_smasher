@@ -168,7 +168,7 @@ function container ()
 
 	function isOverset ( frame )
 	{
-		if ( frame.kind == TextType.POINTTEXT )
+		if ( frame.kind == TextType.POINTTEXT || !frame.lines.length )
 		{
 			return false;
 		}
