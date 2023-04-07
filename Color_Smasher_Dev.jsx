@@ -463,6 +463,10 @@ function container ()
 			//which consists of a rectangle as a clipping mask and an "art group" of the items
 			//that comprise the pattern fill.
 			//so ungroup that "art group" to the tmpPatternGroup for color checking
+			if ( !g.groupItems[ 0 ].groupItems.length )
+			{
+				return;
+			}
 			ungroup( g.groupItems[ 0 ].groupItems[ 0 ], tmpPatternLay, 0 );
 		} )
 
