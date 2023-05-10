@@ -871,6 +871,10 @@ function container ()
 		{
 			lay.pageItems.length ? errorList.push( "Some artwork was found that was not using Boombah colors. It has been duplicated to a new layer called 'Wrong Color Artwork'." ) : wrongColorLayer.remove();;
 		}
+		else if ( lay.name.match( /color info/i ) )
+		{
+			lay.visible = false;
+		}
 	} );
 
 
