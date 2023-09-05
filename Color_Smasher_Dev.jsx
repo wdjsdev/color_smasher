@@ -583,18 +583,27 @@ function container ()
 	{
 		smashTimer.beginTask( "breakInkLayerSymbols" );
 		var tmpLay = layers.add();
+		tmpLay.name = lay.name + "tmp";
 		afc( docRef, "symbolItems" ).forEach( function ( s )
 		{
 			if ( s.layer === lay )
 			{
 				s.moveToBeginning( tmpLay );
 				s.breakLink();
-				ungroup( tmpLay, lay, 0, cleanupSymbolContents );
 			}
-			afc( tmpLay ).concat( afc( tmpLay, "layers" ) ).forEach( function ( i )
-			{
-				i.remove();
-			} )
+		} )
+
+		//make sure everything in the layer is visible and unlocked
+		recursiveDig( tmpLay, function ( curItem )
+		{
+			curItem.visible = true;
+			curItem.locked = curItem.hidden = false;
+		} );
+
+		ungroup( tmpLay, lay, 0, cleanupSymbolContents );
+		afc( tmpLay ).concat( afc( tmpLay, "layers" ) ).forEach( function ( i )
+		{
+			i.remove();
 		} )
 		tmpLay.remove();
 		smashTimer.endTask( "breakInkLayerSymbols" );
@@ -702,6 +711,9 @@ function container ()
 		app.executeMenuCommand( "expandStyle" );
 
 		app.userInteractionLevel = UserInteractionLevel.DISPLAYALERTS;
+
+		docRef.selection = null;
+		app.redraw();
 
 		log.l( "Appearance expansion complete. Ungrouping again." );
 		afc( inkLayer, "pageItems" ).forEach( function ( gi )
