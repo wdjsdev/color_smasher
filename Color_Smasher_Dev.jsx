@@ -157,7 +157,7 @@ function container ()
 			{
 				item.remove();
 			} );
-			layer.parent.visible = false;
+			// layer.parent.visible = false;
 
 		}
 
@@ -561,13 +561,16 @@ function container ()
 
 	function extractArtworkFromMockup ( lay )
 	{
+		lay.locked = false;
+		lay.visible = true;
 		afc( lay, "pageItems" ).backForEach( function ( item )
 		{
 			if ( item.name.match( /notes|shadow/i ) || item.typename.match( /raster/i ) )
 			{
 				return;
 			}
-
+			item.locked = false;
+			item.visible = true;
 			item.duplicate( inkLayer );
 		} );
 
@@ -594,11 +597,15 @@ function container ()
 		} )
 
 		//make sure everything in the layer is visible and unlocked
-		recursiveDig( tmpLay, function ( curItem )
-		{
-			curItem.visible = true;
-			curItem.locked = curItem.hidden = false;
-		} );
+		app.executeMenuCommand( "unlockAll" );
+		app.executeMenuCommand( "showAll" );
+		// recursiveDig( tmpLay, function ( curItem )
+		// {
+		// 	curItem.visible = true;
+
+
+		// 	curItem.locked = curItem.hidden = false;
+		// } );
 
 		ungroup( tmpLay, lay, 0, cleanupSymbolContents );
 		afc( tmpLay ).concat( afc( tmpLay, "layers" ) ).forEach( function ( i )
@@ -677,7 +684,13 @@ function container ()
 	function getColorsFromInkLayer ()
 	{
 		smashTimer.beginTask( "getColorsFromInkLayer" );
-
+		afc( docRef, "layers" ).forEach( function ( lay )
+		{
+			if ( !lay.name.match( /ink|wrong/i ) )
+			{
+				lay.visible = false;
+			}
+		} );
 		breakInkLayerSymbols( inkLayer );
 		outlineTextFrames( inkLayer );
 
@@ -742,6 +755,14 @@ function container ()
 		inkLayer.name = "Ink Layer";
 
 		docRef.selection = null;
+
+		afc( docRef, "layers" ).forEach( function ( lay )
+		{
+			if ( !lay.name.match( /ink|wrong/i ) )
+			{
+				lay.visible = true;
+			}
+		} );
 	}
 
 	function getInkLayer ()
